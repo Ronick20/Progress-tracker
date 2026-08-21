@@ -139,6 +139,11 @@ there is a single code path and the row keeps its history. Rows with
 If a save fails, the optimistic change is **rolled back** and a message appears —
 the UI never claims a save that did not happen. Full offline support is out of scope.
 
+The Supabase client retries a failed **read** three times with 1s/2s/4s backoff, so a
+brief connection blip heals itself and a genuine outage takes roughly eight seconds to
+surface as the error screen. Writes are not retried, so a failed toggle rolls back
+promptly and can never be applied twice.
+
 ## Migrating Phase 1 data
 
 On first load after upgrading, any completions found under the Phase 1 key
@@ -169,6 +174,9 @@ app once in each; each browser's data merges into the same database.
   can disagree about which day "today" is near midnight.
 - No offline support: with no network, loading shows an error with a retry, and
   toggling reverts.
+- Unticking sets `completed = false` rather than deleting the row, so `habit_logs`
+  keeps a row for every habit/date ever touched. That is intentional (one code path,
+  and the row keeps its `created_at`), but it does mean the table never shrinks.
 - Two devices editing the same cell at the same time is last-write-wins; there is no
   realtime subscription, so a second device sees the change on its next load.
 
