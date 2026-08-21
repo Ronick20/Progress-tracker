@@ -4,6 +4,7 @@ export interface Habit {
   name: string;
   /** Optional emoji/glyph. Reserved for a later phase; the grid does not render it. */
   icon: string | null;
+  /** `false` hides the habit from the grid without deleting its history. */
   active: boolean;
   sortOrder: number;
 }
@@ -45,3 +46,14 @@ export interface CalendarDay {
  * `completed = false` are therefore dropped when the map is built.
  */
 export type CompletionMap = Record<DateKey, Record<HabitId, true> | undefined>;
+
+/** One row of the `daily_tasks` table: something to do on a specific date. */
+export interface DailyTask {
+  id: string;
+  date: DateKey;
+  title: string;
+  /** Free-text detail. Empty when the task is just a one-liner. */
+  description: string;
+  completed: boolean;
+  sortOrder: number;
+}

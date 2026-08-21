@@ -4,6 +4,11 @@ import type { CalendarDay, DateKey, Month } from "@/types/habit";
 
 const WEEKDAY_FORMATTER = new Intl.DateTimeFormat(undefined, { weekday: "short" });
 const MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
 const FULL_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   weekday: "long",
   day: "numeric",
@@ -80,9 +85,21 @@ export function formatMonthLabel({ year, month }: Month): string {
   return MONTH_FORMATTER.format(new Date(year, month, 1));
 }
 
-/** e.g. `Friday, 21 August 2026`. Used for accessible cell labels. */
+/** The same clock date, `delta` days later (or earlier, when negative). */
+export function addDays(date: Date, delta: number): Date {
+  const shifted = new Date(date);
+  shifted.setDate(shifted.getDate() + delta);
+  return shifted;
+}
+
+/** e.g. `Friday, 21 August 2026`. Used for headings and accessible cell labels. */
 export function formatFullDate(date: Date): string {
   return FULL_DATE_FORMATTER.format(date);
+}
+
+/** e.g. `Sat, 22 Aug`. A compact label for the tasks panels. */
+export function formatShortDate(date: Date): string {
+  return SHORT_DATE_FORMATTER.format(date);
 }
 
 /**

@@ -16,10 +16,20 @@ export interface Database {
           sort_order: number;
           created_at: string;
         };
-        // Habits are managed in the Supabase dashboard, and row level security
-        // grants the anon key select only — the app never writes to this table.
-        Insert: Record<string, never>;
-        Update: Record<string, never>;
+        Insert: {
+          id?: string;
+          name: string;
+          icon?: string | null;
+          active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          icon?: string | null;
+          active?: boolean;
+          sort_order?: number;
+        };
         Relationships: [];
       };
       habit_logs: {
@@ -52,6 +62,37 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      daily_tasks: {
+        Row: {
+          id: string;
+          date: string;
+          title: string;
+          description: string | null;
+          completed: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          date: string;
+          title: string;
+          description?: string | null;
+          completed?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          date?: string;
+          title?: string;
+          description?: string | null;
+          completed?: boolean;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

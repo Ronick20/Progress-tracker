@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AddHabitForm } from "@/components/AddHabitForm";
 import { CalendarHeader } from "@/components/CalendarHeader";
+import { DailyTasks } from "@/components/DailyTasks";
 import { HabitRow } from "@/components/HabitRow";
 import { MonthSelector } from "@/components/MonthSelector";
 import {
   addMonths,
+  formatFullDate,
   getCalendarDays,
   getMonthOf,
   isSameMonth,
   useToday,
 } from "@/lib/dates";
-import { fetchHabits } from "@/lib/habits";
+import { createHabit, deleteHabit, fetchHabits, renameHabit } from "@/lib/habits";
 import { fetchMonthCompletions, setHabitCompletion } from "@/lib/habitLogs";
 import { migrateLegacyCompletions } from "@/lib/migrateLocalStorage";
 import { SupabaseConfigError } from "@/lib/supabase";
@@ -30,6 +33,7 @@ const EMPTY_COMPLETIONS: CompletionMap = {};
 const LOAD_ERROR_MESSAGE =
   "Unable to load your tracker. Check your connection and try again.";
 const SAVE_ERROR_MESSAGE = "Unable to save your change. Please try again.";
+const HABIT_SAVE_ERROR_MESSAGE = "Unable to save your habit change. Please try again.";
 
 /** A month's loaded completions, tagged with the month they belong to. */
 interface MonthData {
@@ -202,6 +206,84 @@ export function HabitTracker() {
     [completions, monthKey],
   );
 
+  /**
+   * Habits are edited straight from the grid. `habitsRef` is updated alongside
+   * the rendered list so the loading effect never re-fetches over a change that
+   * has not yet been read back from the database.
+   */
+  const applyHabits = useCallback((next: Habit[]) => {
+    habitsRef.current = next;
+    setHabits(next);
+  }, []);
+
+  /** Adding awaits the write, so the new row appears with its database id. */
+  const addHabit = useCallback(
+    async (name: string) => {
+      const sortOrder =
+        habits.reduce((highest, habit) => Math.max(highest, habit.sortOrder), 0) + 1;
+
+      try {
+        const created = await createHabit(name, sortOrder);
+        applyHabits([...habits, created]);
+        setSaveError(null);
+      } catch (error) {
+        console.error("[habit-tracker] failed to add habit", error);
+        setSaveError(HABIT_SAVE_ERROR_MESSAGE);
+      }
+    },
+    [habits, applyHabits],
+  );
+
+  /** Renaming is optimistic; a failed write puts the old name back. */
+  const renameHabitById = useCallback(
+    (habitId: HabitId, name: string) => {
+      const previous = habits;
+
+      applyHabits(habits.map((habit) => (habit.id === habitId ? { ...habit, name } : habit)));
+      setSaveError(null);
+
+      void (async () => {
+        try {
+          await renameHabit(habitId, name);
+        } catch (error) {
+          console.error("[habit-tracker] failed to rename habit", error);
+          applyHabits(previous);
+          setSaveError(HABIT_SAVE_ERROR_MESSAGE);
+        }
+      })();
+    },
+    [habits, applyHabits],
+  );
+
+  /**
+   * Deleting a habit also deletes every tick it ever had, through the database
+   * cascade, so it is confirmed first and the row is restored if the write fails.
+   */
+  const removeHabit = useCallback(
+    (habit: Habit) => {
+      const message =
+        `Delete “${habit.name}”?\n\n` +
+        "This also deletes everything you have ticked off for it. This cannot be undone.";
+      if (!window.confirm(message)) return;
+
+      const previous = habits;
+
+      applyHabits(habits.filter((item) => item.id !== habit.id));
+      setSaveError(null);
+
+      void (async () => {
+        try {
+          await deleteHabit(habit.id);
+        } catch (error) {
+          console.error("[habit-tracker] failed to delete habit", error);
+          applyHabits(previous);
+          setSaveError(HABIT_SAVE_ERROR_MESSAGE);
+        }
+      })();
+    },
+    [habits, applyHabits],
+  );
+
   const retry = useCallback(() => {
     setLoadFailure(null);
     setRetryCount((count) => count + 1);
@@ -219,10 +301,17 @@ export function HabitTracker() {
 
   return (
     <section className="flex flex-col gap-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-sm font-semibold uppercase tracking-[0.18em] text-ink-muted">
-          Habit Tracker
-        </h1>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+            Habit Tracker
+          </p>
+          {/* Rendered only once the client clock is known, so the server and the
+              first client render agree. */}
+          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            {today ? formatFullDate(today) : "\u00a0"}
+          </h1>
+        </div>
 
         {today && viewedMonth ? (
           <MonthSelector
@@ -264,6 +353,8 @@ export function HabitTracker() {
                   days={days}
                   completedDates={completedDatesByHabit.get(habit.id) ?? EMPTY_DATE_SET}
                   onToggle={toggleCompletion}
+                  onRename={renameHabitById}
+                  onDelete={removeHabit}
                 />
               ))}
             </div>
@@ -284,12 +375,16 @@ export function HabitTracker() {
             Loading your habits…
           </div>
         )}
+
+        {isReady ? <AddHabitForm onAdd={addHabit} /> : null}
       </div>
 
       <p className="text-xs text-ink-faint">
-        Click a cell to mark a habit complete. Your progress is saved to the cloud, so
-        it is there on every device you use.
+        Click a cell to mark a habit complete. Hover a habit to rename or delete it.
+        Everything is saved to the cloud, so it is there on every device you use.
       </p>
+
+      {today ? <DailyTasks today={today} /> : null}
     </section>
   );
 }
