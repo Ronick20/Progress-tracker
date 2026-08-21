@@ -17,7 +17,7 @@ export function HabitRow({ habit, days, completedDates, onToggle }: HabitRowProp
       <div
         role="rowheader"
         title={habit.name}
-        className="sticky left-0 z-20 flex items-center border-b border-r border-line bg-panel px-3 text-sm text-ink transition-colors group-hover:bg-panel-raised"
+        className="sticky left-0 z-20 flex items-center border-b border-r border-line bg-panel px-3 text-[0.8125rem] text-ink sm:text-sm transition-colors group-hover:bg-panel-raised"
       >
         <span className="truncate">{habit.name}</span>
       </div>

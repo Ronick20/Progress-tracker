@@ -112,7 +112,7 @@ export function HabitTracker() {
             <div
               role="grid"
               aria-label={`Habit completion grid for the selected month, ${days.length} days`}
-              className="grid min-w-max [--day-col:2.25rem] [--habit-col:9.5rem] sm:[--day-col:2.5rem] sm:[--habit-col:13rem]"
+              className="grid min-w-max [--day-col:2.25rem] [--habit-col:10.5rem] sm:[--day-col:2.375rem] sm:[--habit-col:13rem]"
               style={{
                 gridTemplateColumns: `var(--habit-col) repeat(${days.length}, var(--day-col))`,
               }}
