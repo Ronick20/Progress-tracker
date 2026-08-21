@@ -25,11 +25,16 @@ the same tracker follows you from your Linux desktop to Windows to your phone.
   renamed and deleted in place, today's date heads the page, and a daily tasks
   section below the grid carries tomorrow's plan into tomorrow's checklist.
 
-Upgrading from Phase 2? Re-run [`supabase/schema.sql`](supabase/schema.sql) — it adds
-the `daily_tasks` table and the write policies on `habits`, and is idempotent, so your
-existing habits and logs are untouched. (It does re-insert any of the twelve seed
-habits you deleted; remove that final `insert` block first if you would rather it
-did not.)
+**Upgrading from Phase 2?** Run
+[`supabase/migrations/0001_phase3_tasks_and_habit_writes.sql`](supabase/migrations/0001_phase3_tasks_and_habit_writes.sql)
+in the Supabase SQL editor. It adds the `daily_tasks` table and the write policies on
+`habits` — without it, adding a habit fails with *"new row violates row-level security
+policy"* and the tasks panel cannot load. It is idempotent and touches no existing
+rows.
+
+Prefer the migration over re-running `schema.sql` on an existing database:
+`schema.sql` ends with a seed insert that would bring back any of the twelve starting
+habits you have since deleted.
 
 ## Setup
 
@@ -45,9 +50,12 @@ npm install
 2. Open **SQL Editor → New query**, paste the contents of
    [`supabase/schema.sql`](supabase/schema.sql) and run it.
 
-That script creates both tables, the unique constraint, the foreign key, the
-`updated_at` trigger, the row level security policies, and seeds the twelve initial
+That script creates all three tables, the unique constraint, the foreign key, the
+`updated_at` triggers, the row level security policies, and seeds twelve starting
 habits. It is idempotent — running it twice will not duplicate anything.
+
+`supabase/migrations/` holds the delta scripts for upgrading a database that was set
+up under an earlier phase; a brand-new project needs only `schema.sql`.
 
 ### 3. Environment variables
 
@@ -174,7 +182,10 @@ there is a single code path and the row keeps its history. Rows with
 `completed = false` are simply not rendered as ticked.
 
 If a save fails, the optimistic change is **rolled back** and a message appears —
-the UI never claims a save that did not happen. Full offline support is out of scope.
+the UI never claims a save that did not happen. A failure whose PostgREST code says
+the schema is behind (RLS denied the write, or the table is unknown) is reported as
+"run the migration" rather than as a connection problem, because retrying it can
+never succeed. Full offline support is out of scope.
 
 The Supabase client retries a failed **read** three times with 1s/2s/4s backoff, so a
 brief connection blip heals itself and a genuine outage takes roughly eight seconds to
@@ -248,7 +259,9 @@ src/
     └── habit.ts                 # Habit, HabitLog, DailyTask, Month, CalendarDay, …
 
 supabase/
-└── schema.sql                   # tables, constraints, RLS policies, seed habits
+├── schema.sql                   # tables, constraints, RLS policies, seed habits
+└── migrations/
+    └── 0001_phase3_tasks_and_habit_writes.sql   # Phase 2 → Phase 3 delta
 ```
 
 ## Features

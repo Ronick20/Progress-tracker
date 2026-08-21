@@ -10,7 +10,7 @@ import {
   updateTask,
 } from "@/lib/dailyTasks";
 import { addDays, formatShortDate, toDateKey } from "@/lib/dates";
-import { SupabaseConfigError } from "@/lib/supabase";
+import { describeSupabaseError } from "@/lib/supabase";
 import type { DailyTask, DateKey } from "@/types/habit";
 
 const LOAD_ERROR_MESSAGE = "Unable to load your tasks. Check your connection and try again.";
@@ -50,9 +50,7 @@ export function DailyTasks({ today }: DailyTasksProps) {
         if (!active) return;
 
         console.error("[habit-tracker] failed to load tasks", error);
-        setLoadError(
-          error instanceof SupabaseConfigError ? error.message : LOAD_ERROR_MESSAGE,
-        );
+        setLoadError(describeSupabaseError(error, LOAD_ERROR_MESSAGE));
       }
     })();
 
@@ -79,7 +77,7 @@ export function DailyTasks({ today }: DailyTasksProps) {
         setSaveError(null);
       } catch (error) {
         console.error("[habit-tracker] failed to add task", error);
-        setSaveError(SAVE_ERROR_MESSAGE);
+        setSaveError(describeSupabaseError(error, SAVE_ERROR_MESSAGE));
       }
     },
     [tasks],
@@ -108,7 +106,7 @@ export function DailyTasks({ today }: DailyTasksProps) {
           setTasks((previous) =>
             (previous ?? []).map((item) => (item.id === task.id ? task : item)),
           );
-          setSaveError(SAVE_ERROR_MESSAGE);
+          setSaveError(describeSupabaseError(error, SAVE_ERROR_MESSAGE));
         }
       })();
     },
@@ -142,7 +140,7 @@ export function DailyTasks({ today }: DailyTasksProps) {
         console.error("[habit-tracker] failed to delete task", error);
 
         setTasks((previous) => [...(previous ?? []), task]);
-        setSaveError(SAVE_ERROR_MESSAGE);
+        setSaveError(describeSupabaseError(error, SAVE_ERROR_MESSAGE));
       }
     })();
   }, []);

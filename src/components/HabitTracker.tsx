@@ -18,7 +18,7 @@ import {
 import { createHabit, deleteHabit, fetchHabits, renameHabit } from "@/lib/habits";
 import { fetchMonthCompletions, setHabitCompletion } from "@/lib/habitLogs";
 import { migrateLegacyCompletions } from "@/lib/migrateLocalStorage";
-import { SupabaseConfigError } from "@/lib/supabase";
+import { describeSupabaseError } from "@/lib/supabase";
 import type {
   CompletionMap,
   DateKey,
@@ -121,8 +121,7 @@ export function HabitTracker() {
         console.error("[habit-tracker] failed to load data", error);
         setLoadFailure({
           monthKey,
-          message:
-            error instanceof SupabaseConfigError ? error.message : LOAD_ERROR_MESSAGE,
+          message: describeSupabaseError(error, LOAD_ERROR_MESSAGE),
         });
       }
     })();
@@ -199,7 +198,7 @@ export function HabitTracker() {
                 }
               : previous,
           );
-          setSaveError(SAVE_ERROR_MESSAGE);
+          setSaveError(describeSupabaseError(error, SAVE_ERROR_MESSAGE));
         }
       })();
     },
@@ -228,7 +227,7 @@ export function HabitTracker() {
         setSaveError(null);
       } catch (error) {
         console.error("[habit-tracker] failed to add habit", error);
-        setSaveError(HABIT_SAVE_ERROR_MESSAGE);
+        setSaveError(describeSupabaseError(error, HABIT_SAVE_ERROR_MESSAGE));
       }
     },
     [habits, applyHabits],
@@ -248,7 +247,7 @@ export function HabitTracker() {
         } catch (error) {
           console.error("[habit-tracker] failed to rename habit", error);
           applyHabits(previous);
-          setSaveError(HABIT_SAVE_ERROR_MESSAGE);
+          setSaveError(describeSupabaseError(error, HABIT_SAVE_ERROR_MESSAGE));
         }
       })();
     },
@@ -277,7 +276,7 @@ export function HabitTracker() {
         } catch (error) {
           console.error("[habit-tracker] failed to delete habit", error);
           applyHabits(previous);
-          setSaveError(HABIT_SAVE_ERROR_MESSAGE);
+          setSaveError(describeSupabaseError(error, HABIT_SAVE_ERROR_MESSAGE));
         }
       })();
     },

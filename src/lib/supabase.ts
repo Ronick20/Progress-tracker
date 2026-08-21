@@ -117,6 +117,44 @@ export class SupabaseConfigError extends Error {
   }
 }
 
+/**
+ * Shown when the database is reachable but has not had the Phase 3 SQL applied:
+ * either `daily_tasks` does not exist, or `habits` still carries the Phase 2
+ * read-only policies. Both are fixed by the same file, and neither is something
+ * a retry can heal — so they must not be reported as a connection problem.
+ */
+export const SETUP_REQUIRED_MESSAGE =
+  "Your database is missing the latest setup. Run " +
+  "supabase/migrations/0001_phase3_tasks_and_habit_writes.sql in the Supabase SQL " +
+  "editor, then reload this page.";
+
+/**
+ * PostgREST/PostgreSQL codes that mean "the schema is not what this app
+ * expects", as opposed to a transient failure.
+ *
+ *   42501    — RLS denied the write (no policy grants it)
+ *   42P01    — the table does not exist
+ *   PGRST205 — the table is not in PostgREST's schema cache
+ *   PGRST204 — a column named in the request does not exist
+ */
+const SETUP_ERROR_CODES = new Set(["42501", "42P01", "PGRST205", "PGRST204"]);
+
+/**
+ * The message to show the user for a failed Supabase call: the configuration
+ * error verbatim, a pointer at the migration when the schema is behind, and
+ * otherwise the caller's generic "try again" text.
+ */
+export function describeSupabaseError(error: unknown, fallback: string): string {
+  if (error instanceof SupabaseConfigError) return error.message;
+
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code === "string" && SETUP_ERROR_CODES.has(code)) {
+    return SETUP_REQUIRED_MESSAGE;
+  }
+
+  return fallback;
+}
+
 let client: SupabaseClient<Database> | null = null;
 
 /**
