@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
+@theme {
+  --color-surface: #0b0d11;
+  --color-panel: #12151b;
+  --color-panel-raised: #171b23;
+  --color-line: #232833;
+  --color-line-strong: #2d3441;
+  --color-ink: #e7eaf0;
+  --color-ink-muted: #8d95a5;
+  --color-ink-faint: #5b6373;
+  --color-accent: #34d399;
+  --color-accent-strong: #10b981;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Slim scrollbar for the horizontally scrolling calendar area. */
+.calendar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+  overscroll-behavior-x: contain;
+}
+
+.calendar-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.calendar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.calendar-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-line-strong);
+  border-radius: 9999px;
 }
