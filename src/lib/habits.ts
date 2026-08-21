@@ -1,20 +1,28 @@
+import { getSupabaseClient } from "@/lib/supabase";
 import type { Habit } from "@/types/habit";
 
 /**
- * The habits the tracker starts with. Ids are what gets persisted, so a `name`
- * can be reworded, and rows added or removed, without losing existing history.
+ * Every active habit, in the order they should appear as grid rows.
+ *
+ * This is the only source of habits — there is no hardcoded list in the UI.
+ * Habits are added, renamed, reordered or deactivated in the Supabase
+ * dashboard, and the change shows up on every device on next load.
  */
-export const DEFAULT_HABITS: Habit[] = [
-  { id: "wake-up-05", name: "Wake up at 05:00" },
-  { id: "gym", name: "Gym" },
-  { id: "reading", name: "Reading / Learning" },
-  { id: "day-planning", name: "Day Planning" },
-  { id: "no-grooming", name: "No Grooming" },
-  { id: "project-work", name: "Project Work" },
-  { id: "no-alcohol", name: "No Alcohol" },
-  { id: "social-media-detox", name: "Social Media Detox" },
-  { id: "goal-journaling", name: "Goal Journaling" },
-  { id: "cold-shower", name: "Cold Shower" },
-  { id: "ten-k-steps", name: "10K Steps" },
-  { id: "plan-tomorrow", name: "Plan Tomorrow" },
-];
+export async function fetchHabits(): Promise<Habit[]> {
+  const { data, error } = await getSupabaseClient()
+    .from("habits")
+    .select("id, name, icon, active, sort_order")
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    icon: row.icon,
+    active: row.active,
+    sortOrder: row.sort_order,
+  }));
+}

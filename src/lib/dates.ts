@@ -45,6 +45,17 @@ export function toDateKey(date: Date): DateKey {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * The inclusive `YYYY-MM-DD` bounds of a month, for querying just that month's
+ * logs. `getDaysInMonth` already handles 30/31-day months and leap years.
+ */
+export function getMonthRange(month: Month): { start: DateKey; end: DateKey } {
+  return {
+    start: toDateKey(new Date(month.year, month.month, 1)),
+    end: toDateKey(new Date(month.year, month.month, getDaysInMonth(month))),
+  };
+}
+
 /** Every day of `month`, in order, ready to render as grid columns. */
 export function getCalendarDays(month: Month, today: Date): CalendarDay[] {
   const todayKey = toDateKey(today);

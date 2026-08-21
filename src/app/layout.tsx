@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Habit Tracker",
-  description: "A monthly habit tracker that stores your progress in this browser.",
+  description: "A monthly habit tracker that keeps your progress in sync across your devices.",
 };
 
 export const viewport: Viewport = {
