@@ -92,9 +92,16 @@ open `http://<your-computer-ip>:3000`.
 npm run dev       # dev server
 npm run build     # production build
 npm run start     # serve the production build
+npm run check:db  # is the database reachable, and is its schema up to date?
 npm run lint      # ESLint
 npx tsc --noEmit  # type check
 ```
+
+`npm run check:db` reads `.env.local`, then reads each table and round-trips one
+inactive probe row through `habits` to prove the write policies exist. When something
+is missing it names the migration to run and links straight to your project's SQL
+editor. Use it whenever the app reports a database problem — it distinguishes a
+missing migration from a genuine connection failure, which the browser cannot.
 
 ## Database schema
 
@@ -257,6 +264,9 @@ src/
 │   └── dates.ts                 # month maths, calendar days, formatting, useToday()
 └── types/
     └── habit.ts                 # Habit, HabitLog, DailyTask, Month, CalendarDay, …
+
+scripts/
+└── check-supabase.mjs           # `npm run check:db` connectivity/schema check
 
 supabase/
 ├── schema.sql                   # tables, constraints, RLS policies, seed habits
