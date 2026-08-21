@@ -7,6 +7,7 @@ import { CalendarHeader } from "@/components/CalendarHeader";
 import { DailyTasks } from "@/components/DailyTasks";
 import { HabitRow } from "@/components/HabitRow";
 import { MonthSelector } from "@/components/MonthSelector";
+import { ProgressAnalytics } from "@/components/ProgressAnalytics";
 import {
   addMonths,
   formatFullDate,
@@ -59,6 +60,13 @@ export function HabitTracker() {
 
   /** Bumped by the retry button to re-run the loading effect. */
   const [retryCount, setRetryCount] = useState(0);
+
+  /**
+   * Bumped whenever a completion reaches the database, so the all-time analysis
+   * re-reads its history. Only successful writes count: a rolled-back toggle
+   * left the stored data unchanged, so the analysis on screen is still right.
+   */
+  const [analysisVersion, setAnalysisVersion] = useState(0);
 
   const viewedMonth = useMemo(
     () => pinnedMonth ?? (today ? getMonthOf(today) : null),
@@ -182,6 +190,7 @@ export function HabitTracker() {
       void (async () => {
         try {
           await setHabitCompletion(habitId, dateKey, completed);
+          setAnalysisVersion((version) => version + 1);
         } catch (error) {
           console.error("[habit-tracker] failed to save completion", error);
 
@@ -330,6 +339,10 @@ export function HabitTracker() {
         >
           {saveError}
         </p>
+      ) : null}
+
+      {isReady && today ? (
+        <ProgressAnalytics habits={habits} today={today} refreshKey={analysisVersion} />
       ) : null}
 
       <div className="overflow-hidden rounded-xl border border-line bg-panel">

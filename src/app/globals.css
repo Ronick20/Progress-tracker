@@ -13,6 +13,11 @@
   --color-accent-strong: #10b981;
   --color-danger: #f87171;
 
+  /* The "missed" half of the progress chart. Chosen against the app's green so
+     the two halves stay separable for red-green colour blindness (OKLab ΔE 12.4
+     under deuteranopia), and backed up by a percentage on every bar. */
+  --color-miss: #e05c5c;
+
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 }

@@ -27,7 +27,7 @@ export function CalendarHeader({ days }: CalendarHeaderProps) {
         >
           <span
             className={`text-xs font-semibold tabular-nums ${
-              day.isToday ? "text-accent" : day.isWeekend ? "text-ink-faint" : "text-ink"
+              day.isToday ? "text-accent" : day.isRestDay ? "text-ink-faint" : "text-ink"
             }`}
           >
             {day.dayOfMonth}

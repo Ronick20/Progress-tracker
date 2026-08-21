@@ -1,3 +1,4 @@
+import { toDateKey } from "@/lib/dates";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { Habit, HabitId } from "@/types/habit";
 
@@ -14,7 +15,7 @@ export const HABIT_NAME_MAX_LENGTH = 60;
 export async function fetchHabits(): Promise<Habit[]> {
   const { data, error } = await getSupabaseClient()
     .from("habits")
-    .select("id, name, icon, active, sort_order")
+    .select("id, name, icon, active, sort_order, created_at")
     .eq("active", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -34,7 +35,7 @@ export async function createHabit(name: string, sortOrder: number): Promise<Habi
   const { data, error } = await getSupabaseClient()
     .from("habits")
     .insert({ name, sort_order: sortOrder })
-    .select("id, name, icon, active, sort_order")
+    .select("id, name, icon, active, sort_order, created_at")
     .single();
 
   if (error) throw error;
@@ -77,6 +78,7 @@ function toHabit(row: {
   icon: string | null;
   active: boolean;
   sort_order: number;
+  created_at: string;
 }): Habit {
   return {
     id: row.id,
@@ -84,5 +86,7 @@ function toHabit(row: {
     icon: row.icon,
     active: row.active,
     sortOrder: row.sort_order,
+    // `created_at` is a timestamptz; the analysis only ever needs its day.
+    createdAt: toDateKey(new Date(row.created_at)),
   };
 }

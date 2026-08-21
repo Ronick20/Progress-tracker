@@ -16,6 +16,23 @@ const FULL_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
 });
 
+/**
+ * The one day of the week that is off. Saturday is a working day here, so only
+ * Sunday is excluded: the grid greys it out and the analysis leaves it out of
+ * both the days done and the days available, rather than scoring it as missed.
+ */
+const REST_WEEKDAY = 0;
+
+/** `true` on a Sunday — the day nothing is expected. */
+export function isRestDay(date: Date): boolean {
+  return date.getDay() === REST_WEEKDAY;
+}
+
+/** `true` when a `YYYY-MM-DD` key falls on a Sunday. */
+export function isRestDayKey(key: DateKey): boolean {
+  return isRestDay(fromDateKey(key));
+}
+
 /** The month a given date falls in. */
 export function getMonthOf(date: Date): Month {
   return { year: date.getFullYear(), month: date.getMonth() };
@@ -74,7 +91,7 @@ export function getCalendarDays(month: Month, today: Date): CalendarDay[] {
       key: toDateKey(date),
       dayOfMonth: index + 1,
       weekdayLabel: WEEKDAY_FORMATTER.format(date),
-      isWeekend: weekday === 0 || weekday === 6,
+      isRestDay: weekday === REST_WEEKDAY,
       isToday: toDateKey(date) === todayKey,
     };
   });
@@ -125,4 +142,59 @@ function getServerToday(): null {
 /** The clock is read once on mount; it never pushes updates. */
 function subscribeToClock(): () => void {
   return () => {};
+}
+
+/** Turns a local `YYYY-MM-DD` key back into a local-midnight `Date`. */
+export function fromDateKey(key: DateKey): Date {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Whole days from `start` to `end`, both as date keys. Computed from the local
+ * calendar dates rather than by dividing milliseconds, so a daylight-saving
+ * change inside the range cannot shift the count by a day.
+ */
+export function daysBetween(start: DateKey, end: DateKey): number {
+  const startUtc = Date.UTC(...toParts(start));
+  const endUtc = Date.UTC(...toParts(end));
+  return Math.round((endUtc - startUtc) / 86_400_000);
+}
+
+/** The earlier of two date keys. Keys sort lexicographically by date. */
+export function minDateKey(a: DateKey, b: DateKey): DateKey {
+  return a <= b ? a : b;
+}
+
+function toParts(key: DateKey): [number, number, number] {
+  const [year, month, day] = key.split("-").map(Number);
+  return [year, month - 1, day];
+}
+
+/**
+ * How many days between `start` and `end` inclusive are actually expected —
+ * every day except Sunday. This is the denominator the analysis divides by, so
+ * a habit is never marked down for a rest day.
+ */
+export function countActiveDays(start: DateKey, end: DateKey): number {
+  const total = daysBetween(start, end) + 1;
+  if (total <= 0) return 0;
+
+  // Offset of the first Sunday in the range, then one every seven days after it.
+  const firstRest = (7 - fromDateKey(start).getDay()) % 7;
+  const restDays = firstRest >= total ? 0 : 1 + Math.floor((total - 1 - firstRest) / 7);
+
+  return total - restDays;
+}
+
+/** The next day that is expected — tomorrow, or Monday when tomorrow is Sunday. */
+export function nextActiveDay(date: Date): Date {
+  const next = addDays(date, 1);
+  return isRestDay(next) ? addDays(next, 1) : next;
+}
+
+/** The previous expected day — yesterday, or Saturday when yesterday is Sunday. */
+export function previousActiveDay(date: Date): Date {
+  const previous = addDays(date, -1);
+  return isRestDay(previous) ? addDays(previous, -1) : previous;
 }
